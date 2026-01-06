@@ -1,6 +1,6 @@
 {
   "extDescription": {
-    "message": "Exploite le paramètre ?q= de Gemini pour envoyer vos prompts en sélectionnant votre modèle préféré (ex: Flash)."
+    "message": "Exploite le paramètre ?q= de Gemini pour remplir et envoyer automatiquement vos prompts."
   },
   "targetModelsTitle": {
     "message": "Modèles Cibles"

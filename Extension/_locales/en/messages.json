@@ -1,6 +1,6 @@
 {
   "extDescription": {
-    "message": "Uses Gemini's ?q= URL parameter to send your prompts using your preferred model (e.g. Flash)."
+    "message": "Uses Gemini's ?q= URL parameter to automatically fill and send your prompts."
   },
   "targetModelsTitle": {
     "message": "Target Models"
