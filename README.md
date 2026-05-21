@@ -4,9 +4,11 @@ Une extension Chrome puissante (et un script Tampermonkey) pour automatiser et a
 
 ## 🌟 Fonctionnalités
 
-- **Sélection du Modèle Préféré** : Sélectionne vos modèles préférés (ex: "Flash", "Rapid") s'ils ne sont pas actifs par défaut.
+- **Sélection du Modèle Préféré** : Sélectionne vos modèles préférés (ex: "Flash", "Rapid", "3.5 Flash") s'ils ne sont pas actifs par défaut.
 - **Envoi rapide** : Remplit et envoie automatiquement votre prompt via une URL paramétrée.
 - **Interface de Configuration** : Ajustez facilement vos modèles cibles et les délais d'exécution via un popup moderne (Thème sombre Gemini).
+- **Mode Sans Compte** : Compatible avec la version publique de Gemini (sans être connecté à un compte Google).
+- **Compatible Neural Expressive** : Support total de la nouvelle interface Gemini (Google I/O 2026).
 
 ## 💡 Comment ça marche ?
 
@@ -63,7 +65,7 @@ Si vous ne souhaitez pas installer l'extension complète, vous pouvez utiliser c
 // ==UserScript==
 // @name         Gemini Ultimate (Legacy Script)
 // @namespace    http://tampermonkey.net/
-// @version      6.1
+// @version      1.8
 // @description  Force le modèle (supporte plusieurs alias), remplit et envoie.
 // @author       Lucas_M54
 // @match        https://gemini.google.com/*
@@ -75,8 +77,8 @@ Si vous ne souhaitez pas installer l'extension complète, vous pouvez utiliser c
 
     // ================= CONFIGURATION =================
     const CONFIG = {
-        TARGET_MODELS: ['Flash', 'Rapid', 'Fast'],
-        MODELS_TO_AVOID: ['Thinking', 'Raisonnement'],
+        TARGET_MODELS: ['3.5 Flash', 'Flash', 'Rapid', 'Fast'],
+        MODELS_TO_AVOID: ['3.5 Thinking', '3.1 Pro', 'Thinking', 'Raisonnement'],
         DELAY_MENU_OPEN: 50,
         DELAY_PAGE_LOAD: 50,
         DELAY_BEFORE_SEND: 50

@@ -1,8 +1,15 @@
 // Shared default configuration for Gemini Ultimate
+// Keywords are matched as substrings (case-insensitive) against model names.
+// Gemini uses names like "3.5 Flash", "3.5 Thinking", "3.1 Pro", "Flash-Lite".
+// Both logged-in and logged-out states are supported.
 const DEFAULT_CONFIG = {
-    TARGET_MODELS: ['Flash', 'Rapid', 'Fast'],
-    MODELS_TO_AVOID: ['Thinking', 'Raisonnement', 'Pro'],
-    DELAY_MENU_OPEN: 800,
-    DELAY_PAGE_LOAD: 1000,
-    DELAY_BEFORE_SEND: 800
+    // Modèles cibles (les plus rapides en priorité)
+    // "Flash" matche : 3.5 Flash, Flash-Lite, 1.5 Flash, etc.
+    TARGET_MODELS: ['Flash', 'Flash-Lite'],
+    // Modèles à éviter (lents / coûteux)
+    MODELS_TO_AVOID: ['Thinking', 'Raisonnement', 'réflexion', 'Pro', 'Deep Research', 'Ultra'],
+    // Délais en ms — réduits pour plus de rapidité
+    DELAY_MENU_OPEN: 500,
+    DELAY_PAGE_LOAD: 800,
+    DELAY_BEFORE_SEND: 700
 };
