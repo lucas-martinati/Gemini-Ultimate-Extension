@@ -45,9 +45,9 @@ function showNotification(message, type = 'error') {
     };
     const color = colors[type] || colors.error;
 
-    const n = document.createElement('div');
-    n.id = 'gemini-ultimate-notification';
-    n.style.cssText = `
+    const notifEl = document.createElement('div');
+    notifEl.id = 'gemini-ultimate-notification';
+    notifEl.style.cssText = `
         position:fixed; bottom:20px; left:50%;
         transform:translateX(-50%);
         padding:12px 24px;
@@ -59,12 +59,14 @@ function showNotification(message, type = 'error') {
         z-index:999999; display:flex; align-items:center; gap:10px;
         animation:guSlideUp .3s ease; backdrop-filter:blur(10px);
     `;
-    n.innerHTML = `<span>⚠️ ${message}</span>`;
-    document.body.appendChild(n);
+    const span = document.createElement('span');
+    span.textContent = `⚠️ ${message}`;
+    notifEl.appendChild(span);
+    document.body.appendChild(notifEl);
 
     setTimeout(() => {
-        n.style.animation = 'guSlideDown .3s ease forwards';
-        setTimeout(() => n.remove(), 300);
+        notifEl.style.animation = 'guSlideDown .3s ease forwards';
+        setTimeout(() => notifEl.remove(), 300);
     }, 4000);
 }
 
@@ -96,7 +98,7 @@ function findModelSelectorPill() {
     ];
     for (const sel of stableSelectors) {
         const el = document.querySelector(sel);
-        if (el && el.offsetParent !== null) return el;
+        if (el && el.getClientRects().length > 0) return el;
     }
 
     // ── Groupe 2 : Header (nouveau layout Neural Expressive) ──
@@ -108,7 +110,7 @@ function findModelSelectorPill() {
     for (const container of headerContainers) {
         const btns = container.querySelectorAll('button, [role="button"], [role="combobox"]');
         for (const btn of btns) {
-            if (btn.offsetParent === null) continue;
+            if (btn.getClientRects().length === 0) continue;
             const text = (btn.textContent + ' ' + (btn.getAttribute('aria-label') || '')).toLowerCase();
             if (MODEL_KW.some(k => text.includes(k)) && text.length < 80) return btn;
         }
@@ -131,13 +133,15 @@ function findModelSelectorPill() {
     ];
     for (const sel of legacySelectors) {
         const el = document.querySelector(sel);
-        if (el && el.offsetParent !== null) return el;
+        if (el && el.getClientRects().length > 0) return el;
     }
 
     // ── Groupe 4 : Fallback texte global (dernier recours) ──
     const allButtons = document.querySelectorAll('button, [role="button"]');
     for (const btn of allButtons) {
-        if (btn.offsetParent === null) continue;
+        if (btn.getClientRects().length === 0) continue;
+        // Exclure les boutons dans des modales/overlays non liées
+        if (btn.closest('[role="dialog"], [role="alertdialog"]')) continue;
         const text = (btn.textContent + ' ' + (btn.getAttribute('aria-label') || '')).toLowerCase().trim();
         if (MODEL_KW.some(k => text.includes(k)) && text.length < 60) return btn;
     }
@@ -162,10 +166,11 @@ function findMenuItem(keywords) {
         const kw = keyword.toLowerCase().trim();
 
         // M1 : data-test-id (plus stable)
+        const escapedKw = CSS.escape(kw);
         const byId = document.querySelector(
-            `[data-test-id*="${kw}" i], button[data-test-id*="${kw}" i]`
+            `[data-test-id*="${escapedKw}" i], button[data-test-id*="${escapedKw}" i]`
         );
-        if (byId && byId.offsetParent !== null) return { element: byId, keyword };
+        if (byId && byId.getClientRects().length > 0) return { element: byId, keyword };
 
         // M2 : Span / libellé texte dans les items de menu
         const labelEls = document.querySelectorAll(
@@ -180,7 +185,7 @@ function findMenuItem(keywords) {
                 const btn = el.closest(
                     'button, [role="menuitemradio"], [role="menuitem"], [role="option"], mat-option, li'
                 );
-                if (btn && btn.offsetParent !== null) return { element: btn, keyword };
+                if (btn && btn.getClientRects().length > 0) return { element: btn, keyword };
             }
         }
 
@@ -191,7 +196,7 @@ function findMenuItem(keywords) {
             + 'li[role="option"], li[role="menuitem"]'
         );
         for (const item of menuItems) {
-            if (item.offsetParent === null) continue;
+            if (item.getClientRects().length === 0) continue;
             if ((item.textContent || '').toLowerCase().includes(kw)) return { element: item, keyword };
         }
     }
@@ -202,19 +207,22 @@ function findMenuItem(keywords) {
 
 function waitForSelector(selector, timeout = 10000) {
     return new Promise((resolve) => {
+        let resolved = false;
         const el = document.querySelector(selector);
         if (el) return resolve(el);
         const obs = new MutationObserver(() => {
+            if (resolved) return;
             const found = document.querySelector(selector);
-            if (found) { obs.disconnect(); resolve(found); }
+            if (found) { resolved = true; obs.disconnect(); resolve(found); }
         });
         obs.observe(document.body, { childList: true, subtree: true });
-        setTimeout(() => { obs.disconnect(); resolve(null); }, timeout);
+        setTimeout(() => { if (!resolved) { resolved = true; obs.disconnect(); resolve(null); } }, timeout);
     });
 }
 
 function waitForMenu(timeout = 2500) {
     return new Promise((resolve) => {
+        let resolved = false;
         // Couvre l'ancien menu Material ET les nouveaux menus/dropdowns
         const check = () => document.querySelector(
             '[role="menu"], [role="listbox"], [role="dialog"], '
@@ -226,11 +234,12 @@ function waitForMenu(timeout = 2500) {
         const found = check();
         if (found) return resolve(found);
         const obs = new MutationObserver(() => {
+            if (resolved) return;
             const f = check();
-            if (f) { obs.disconnect(); resolve(f); }
+            if (f) { resolved = true; obs.disconnect(); resolve(f); }
         });
         obs.observe(document.body, { childList: true, subtree: true });
-        setTimeout(() => { obs.disconnect(); resolve(check()); }, timeout);
+        setTimeout(() => { if (!resolved) { resolved = true; obs.disconnect(); resolve(check()); } }, timeout);
     });
 }
 
@@ -267,7 +276,6 @@ function injectText(editor, text) {
     }
 
     // Déclencher les événements React/Angular/Lit
-    editor.dispatchEvent(new Event('input',  { bubbles: true }));
     editor.dispatchEvent(new Event('change', { bubbles: true }));
     editor.dispatchEvent(new InputEvent('input', { bubbles: true, data: text, inputType: 'insertText' }));
 }
@@ -283,7 +291,9 @@ function sendMessage(editor) {
 
     // Priorité 2 : Bouton d'envoi (fallback)
     // Couvre les anciens et nouveaux aria-label Gemini (FR + EN + Neural Expressive)
+    // Ne s'exécute que si l'éditeur contient encore du texte (= Enter n'a pas fonctionné)
     setTimeout(() => {
+        if (editor.innerText.trim().length === 0) return;
         const btn = document.querySelector(
             'button[aria-label="Envoyer un message"], '
             + 'button[aria-label="Envoyer le message"], '
@@ -296,7 +306,7 @@ function sendMessage(editor) {
             + 'button.submit, '
             + '[data-test-id="send-btn"]'
         );
-        if (btn && !btn.disabled && btn.offsetParent !== null) btn.click();
+        if (btn && !btn.disabled && btn.getClientRects().length > 0) btn.click();
     }, 500);
 }
 
@@ -348,7 +358,12 @@ async function runScript() {
     injectText(editor, query);
 
     // Nettoyer le ?q= de l'URL (évite une double soumission en cas de reload)
-    window.history.replaceState({}, document.title, window.location.pathname);
+    // Préserve les autres paramètres éventuels (hl=, etc.) pour ne pas casser le SPA
+    const cleanParams = new URLSearchParams(window.location.search);
+    cleanParams.delete('q');
+    const cleanSearch = cleanParams.toString();
+    const cleanUrl = window.location.pathname + (cleanSearch ? '?' + cleanSearch : '');
+    window.history.replaceState({}, document.title, cleanUrl);
 
     // 5. Envoyer
     setTimeout(() => sendMessage(editor), config.DELAY_BEFORE_SEND);

@@ -65,7 +65,7 @@ Si vous ne souhaitez pas installer l'extension complète, vous pouvez utiliser c
 // ==UserScript==
 // @name         Gemini Ultimate (Legacy Script)
 // @namespace    http://tampermonkey.net/
-// @version      1.8
+// @version      6.2
 // @description  Force le modèle (supporte plusieurs alias), remplit et envoie.
 // @author       Lucas_M54
 // @match        https://gemini.google.com/*
@@ -77,8 +77,8 @@ Si vous ne souhaitez pas installer l'extension complète, vous pouvez utiliser c
 
     // ================= CONFIGURATION =================
     const CONFIG = {
-        TARGET_MODELS: ['3.5 Flash', 'Flash', 'Rapid', 'Fast'],
-        MODELS_TO_AVOID: ['3.5 Thinking', '3.1 Pro', 'Thinking', 'Raisonnement'],
+        TARGET_MODELS: ['Flash-Lite', '3.5 Flash', 'Flash', 'Rapid', 'Fast'],
+        MODELS_TO_AVOID: ['3.5 Thinking', '3.1 Pro', 'Thinking', 'Raisonnement', 'réflexion', 'Deep Research', 'Ultra'],
         DELAY_MENU_OPEN: 50,
         DELAY_PAGE_LOAD: 50,
         DELAY_BEFORE_SEND: 50

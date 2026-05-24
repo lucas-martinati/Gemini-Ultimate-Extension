@@ -4,8 +4,9 @@
 // Both logged-in and logged-out states are supported.
 const DEFAULT_CONFIG = {
     // Modèles cibles (les plus rapides en priorité)
-    // "Flash" matche : 3.5 Flash, Flash-Lite, 1.5 Flash, etc.
-    TARGET_MODELS: ['Flash', 'Flash-Lite'],
+    // "Flash-Lite" est plus spécifique → testé en premier (substring matching)
+    // "Flash" matche : 3.5 Flash, 1.5 Flash, etc.
+    TARGET_MODELS: ['Flash-Lite', 'Flash'],
     // Modèles à éviter (lents / coûteux)
     MODELS_TO_AVOID: ['Thinking', 'Raisonnement', 'réflexion', 'Pro', 'Deep Research', 'Ultra'],
     // Délais en ms — réduits pour plus de rapidité
