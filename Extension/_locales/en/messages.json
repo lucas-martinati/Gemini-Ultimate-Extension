@@ -40,5 +40,31 @@
   },
   "confirmReset": {
     "message": "Are you sure you want to reset to default settings?"
+  },
+  "cancelBannerSending": {
+    "message": "Auto-sending in $SECONDS$s...",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "cancelBannerPreparing": {
+    "message": "Preparing request..."
+  },
+  "btnCancel": {
+    "message": "Cancel"
+  },
+  "btnCancelHint": {
+    "message": "Esc"
+  },
+  "cancelBannerCancelled": {
+    "message": "Auto-send cancelled"
+  },
+  "btnClearText": {
+    "message": "Clear"
+  },
+  "alreadySentNotice": {
+    "message": "Request already handled in this session"
   }
 }

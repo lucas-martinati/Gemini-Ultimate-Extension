@@ -40,5 +40,31 @@
   },
   "confirmReset": {
     "message": "Voulez-vous vraiment remettre les paramètres par défaut ?"
+  },
+  "cancelBannerSending": {
+    "message": "Envoi automatique dans $SECONDS$s...",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "cancelBannerPreparing": {
+    "message": "Préparation de la requête..."
+  },
+  "btnCancel": {
+    "message": "Annuler"
+  },
+  "btnCancelHint": {
+    "message": "Échap"
+  },
+  "cancelBannerCancelled": {
+    "message": "Envoi automatique annulé"
+  },
+  "btnClearText": {
+    "message": "Effacer"
+  },
+  "alreadySentNotice": {
+    "message": "Requête déjà traitée dans cette session"
   }
 }

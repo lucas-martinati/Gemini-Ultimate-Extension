@@ -11,10 +11,10 @@ const DEFAULT_CONFIG = {
     // Modèles à éviter (lents / coûteux)
     // "Extended" couvre le mode "Extended thinking" ET le badge "Extended" sur le picker pill
     MODELS_TO_AVOID: ['Extended', 'Thinking', 'Raisonnement', 'réflexion', 'Pro', 'Deep Research', 'Ultra'],
-    // Délais en ms — réduits pour plus de rapidité
+    // Délais en ms
     DELAY_MENU_OPEN: 500,
     DELAY_PAGE_LOAD: 800,
-    DELAY_BEFORE_SEND: 700,
+    DELAY_BEFORE_SEND: 1000,
     // Debug logs in browser console
     DEBUG_LOGS: false
 };
