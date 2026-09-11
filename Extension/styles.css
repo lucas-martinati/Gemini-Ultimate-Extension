@@ -227,6 +227,11 @@ h1 {
     color: var(--purple);
 }
 
+.icon-thinking {
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+
 .section-text {
     display: flex;
     flex-direction: column;
@@ -360,6 +365,12 @@ input[type="number"]::-webkit-outer-spin-button {
     background: var(--red-dim);
     border-color: rgba(242,139,130,0.15);
     color: var(--red);
+}
+
+.card-thinking .tag {
+    background: var(--accent-dim);
+    border-color: rgba(138,180,248,0.15);
+    color: var(--accent);
 }
 
 .tag:hover {
@@ -517,6 +528,17 @@ input[type="number"]::-webkit-outer-spin-button {
     transform: translateX(22px) translateY(-50%);
     background: var(--purple);
     box-shadow: 0 0 10px rgba(197,138,249,0.4);
+}
+
+.card-thinking .toggle-switch input:checked + .toggle-slider {
+    background: var(--accent-dim);
+    border-color: rgba(138,180,248,0.3);
+}
+
+.card-thinking .toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(22px) translateY(-50%);
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(138,180,248,0.4);
 }
 
 /* ─── Actions ──────────────────────────────────────────────────── */

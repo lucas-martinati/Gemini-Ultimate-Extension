@@ -66,5 +66,14 @@
   },
   "alreadySentNotice": {
     "message": "Requête déjà traitée dans cette session"
+  },
+  "extendedThinkingTitle": {
+    "message": "Raisonnement étendu"
+  },
+  "extendedThinkingDesc": {
+    "message": "Activer le mode de réflexion approfondie (Thinking)"
+  },
+  "extendedPlaceh": {
+    "message": "Ajouter un terme (ex: Thinking)"
   }
 }

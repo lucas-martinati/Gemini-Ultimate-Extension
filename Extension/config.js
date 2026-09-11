@@ -9,8 +9,11 @@ const DEFAULT_CONFIG = {
     // "Flash" matche : 3.7 Flash, 3.5 Flash, etc.
     TARGET_MODELS: ['Flash-Lite', 'Flash'],
     // Modèles à éviter (lents / coûteux)
-    // "Extended" couvre le mode "Extended thinking" ET le badge "Extended" sur le picker pill
-    MODELS_TO_AVOID: ['Extended', 'Thinking', 'Raisonnement', 'réflexion', 'Pro', 'Deep Research', 'Ultra'],
+    MODELS_TO_AVOID: ['Pro', 'Deep Research', 'Ultra'],
+    // Activer ou non le mode Raisonnement étendu (Extended thinking)
+    EXTENDED_THINKING: false,
+    // Mots-clés pour identifier le mode ou badge Raisonnement étendu / Extended thinking
+    EXTENDED_KEYWORDS: ['Raisonnement étendu', 'Extended thinking', 'Thinking', 'Raisonnement', 'réflexion', 'Extended'],
     // Délais en ms
     DELAY_MENU_OPEN: 500,
     DELAY_PAGE_LOAD: 800,

@@ -1,7 +1,7 @@
 // DEFAULT_CONFIG is loaded from config.js
 
 // State
-let config = { ...DEFAULT_CONFIG };
+let config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 let saveTimeout;
 
 // DOM Elements
@@ -15,6 +15,10 @@ const els = {
     delayMenu: document.getElementById('delayMenu'),
     delayPage: document.getElementById('delayPage'),
     delaySend: document.getElementById('delaySend'),
+    extendedThinking: document.getElementById('extendedThinking'),
+    extendedList: document.getElementById('extendedList'),
+    newExtended: document.getElementById('newExtended'),
+    addExtendedBtn: document.getElementById('addExtendedBtn'),
     debugLogs: document.getElementById('debugLogs'),
     saveIndicator: document.getElementById('saveIndicator')
 };
@@ -26,6 +30,7 @@ function saveConfig() {
         config.DELAY_MENU_OPEN = parseInt(els.delayMenu.value) || 50;
         config.DELAY_PAGE_LOAD = parseInt(els.delayPage.value) || 50;
         config.DELAY_BEFORE_SEND = parseInt(els.delaySend.value) || 50;
+        config.EXTENDED_THINKING = els.extendedThinking.checked;
         config.DEBUG_LOGS = els.debugLogs.checked;
 
         chrome.storage.sync.set({ config }, () => {
@@ -80,9 +85,17 @@ function updateUI() {
         saveConfig();
     });
 
+    renderTags(els.extendedList, config.EXTENDED_KEYWORDS || [], (index) => {
+        if (!Array.isArray(config.EXTENDED_KEYWORDS)) config.EXTENDED_KEYWORDS = [];
+        config.EXTENDED_KEYWORDS.splice(index, 1);
+        updateUI();
+        saveConfig();
+    });
+
     els.delayMenu.value = config.DELAY_MENU_OPEN;
     els.delayPage.value = config.DELAY_PAGE_LOAD;
     els.delaySend.value = config.DELAY_BEFORE_SEND;
+    els.extendedThinking.checked = config.EXTENDED_THINKING === true;
     els.debugLogs.checked = config.DEBUG_LOGS === true;
 }
 
@@ -107,7 +120,37 @@ document.addEventListener('DOMContentLoaded', () => {
     localizeHtml();
 
     chrome.storage.sync.get(['config'], (result) => {
-        if (result.config) config = result.config;
+        let needsSave = false;
+        if (result.config) {
+            config = { ...DEFAULT_CONFIG, ...result.config };
+            // Initialize EXTENDED_KEYWORDS if missing or empty
+            if (!Array.isArray(config.EXTENDED_KEYWORDS) || config.EXTENDED_KEYWORDS.length === 0) {
+                config.EXTENDED_KEYWORDS = [...DEFAULT_CONFIG.EXTENDED_KEYWORDS];
+                needsSave = true;
+            }
+            // Ensure EXTENDED_THINKING is boolean
+            if (typeof config.EXTENDED_THINKING !== 'boolean') {
+                config.EXTENDED_THINKING = DEFAULT_CONFIG.EXTENDED_THINKING;
+                needsSave = true;
+            }
+            // Clean up old thinking keywords from MODELS_TO_AVOID
+            const thinkingKeywords = ['extended', 'thinking', 'raisonnement', 'réflexion'];
+            if (Array.isArray(config.MODELS_TO_AVOID)) {
+                const initialLen = config.MODELS_TO_AVOID.length;
+                config.MODELS_TO_AVOID = config.MODELS_TO_AVOID.filter(
+                    m => !thinkingKeywords.includes(m.toLowerCase().trim())
+                );
+                if (config.MODELS_TO_AVOID.length !== initialLen) {
+                    needsSave = true;
+                }
+            }
+            if (needsSave) {
+                chrome.storage.sync.set({ config });
+            }
+        } else {
+            config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+            chrome.storage.sync.set({ config });
+        }
         updateUI();
     });
 });
@@ -133,9 +176,23 @@ function addAvoid() {
     }
 }
 
+function addExtended() {
+    const val = els.newExtended.value.trim();
+    if (!Array.isArray(config.EXTENDED_KEYWORDS)) {
+        config.EXTENDED_KEYWORDS = [];
+    }
+    if (val && !config.EXTENDED_KEYWORDS.includes(val)) {
+        config.EXTENDED_KEYWORDS.push(val);
+        els.newExtended.value = '';
+        updateUI();
+        saveConfig();
+    }
+}
+
 // Click Listeners
 els.addTargetBtn.addEventListener('click', addTarget);
 els.addAvoidBtn.addEventListener('click', addAvoid);
+els.addExtendedBtn.addEventListener('click', addExtended);
 
 // Enter Key Listeners
 els.newTarget.addEventListener('keypress', (e) => {
@@ -144,11 +201,15 @@ els.newTarget.addEventListener('keypress', (e) => {
 els.newAvoid.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') addAvoid();
 });
+els.newExtended.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addExtended();
+});
 
 // Auto-save on delay input changes
 els.delayMenu.addEventListener('input', saveConfig);
 els.delayPage.addEventListener('input', saveConfig);
 els.delaySend.addEventListener('input', saveConfig);
+els.extendedThinking.addEventListener('change', saveConfig);
 els.debugLogs.addEventListener('change', saveConfig);
 
 // Reset

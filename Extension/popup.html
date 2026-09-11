@@ -117,6 +117,37 @@
             </div>
         </div>
 
+        <!-- ─── Extended Thinking Toggle ────────────────────────── -->
+        <div class="card card-thinking">
+            <div class="toggle-row" style="margin-bottom: 14px;">
+                <div class="toggle-label">
+                    <div class="section-icon-wrap icon-thinking">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7zM9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9v1z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="toggle-text">
+                        <span class="toggle-title" data-i18n="extendedThinkingTitle">Extended Thinking</span>
+                        <span class="toggle-desc" data-i18n="extendedThinkingDesc">Enable or disable extended reasoning</span>
+                    </div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="extendedThinking">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="input-group">
+                <input type="text" id="newExtended" data-i18n-placeholder="extendedPlaceh"
+                    placeholder="Add a term (e.g., Thinking)">
+                <button id="addExtendedBtn" class="icon-btn" title="Add">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+            <div id="extendedList" class="tag-list"></div>
+        </div>
+
         <!-- ─── Debug Toggle ────────────────────────────────────── -->
         <div class="card card-debug">
             <div class="toggle-row">

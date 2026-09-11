@@ -66,5 +66,14 @@
   },
   "alreadySentNotice": {
     "message": "Request already handled in this session"
+  },
+  "extendedThinkingTitle": {
+    "message": "Extended Thinking"
+  },
+  "extendedThinkingDesc": {
+    "message": "Enable extended reasoning mode (Thinking)"
+  },
+  "extendedPlaceh": {
+    "message": "Add a term (e.g. Thinking)"
   }
 }

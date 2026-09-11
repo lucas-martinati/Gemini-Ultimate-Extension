@@ -33,11 +33,38 @@ function logWarn(...args) {
 async function getConfig() {
     return new Promise((resolve) => {
         chrome.storage.sync.get(['config'], (result) => {
-            const config = result.config || DEFAULT_CONFIG;
-            // Migration: ensure "Extended" is in MODELS_TO_AVOID for users
-            // who upgraded from v1.x with a saved config
-            if (config.MODELS_TO_AVOID && !config.MODELS_TO_AVOID.includes('Extended')) {
-                config.MODELS_TO_AVOID.push('Extended');
+            let needsSave = false;
+            let config;
+            if (result.config) {
+                config = { ...DEFAULT_CONFIG, ...result.config };
+                // Migration: remove old thinking/extended keywords from MODELS_TO_AVOID
+                const thinkingKeywords = ['extended', 'thinking', 'raisonnement', 'réflexion'];
+                if (Array.isArray(config.MODELS_TO_AVOID)) {
+                    const initialLen = config.MODELS_TO_AVOID.length;
+                    config.MODELS_TO_AVOID = config.MODELS_TO_AVOID.filter(
+                        m => !thinkingKeywords.includes(m.toLowerCase().trim())
+                    );
+                    if (config.MODELS_TO_AVOID.length !== initialLen) {
+                        needsSave = true;
+                    }
+                }
+                if (typeof config.EXTENDED_THINKING !== 'boolean') {
+                    config.EXTENDED_THINKING = (typeof DEFAULT_CONFIG.EXTENDED_THINKING === 'boolean')
+                        ? DEFAULT_CONFIG.EXTENDED_THINKING
+                        : false;
+                    needsSave = true;
+                }
+                if (!Array.isArray(config.EXTENDED_KEYWORDS) || config.EXTENDED_KEYWORDS.length === 0) {
+                    config.EXTENDED_KEYWORDS = Array.isArray(DEFAULT_CONFIG.EXTENDED_KEYWORDS)
+                        ? [...DEFAULT_CONFIG.EXTENDED_KEYWORDS]
+                        : ['Raisonnement étendu', 'Extended thinking', 'Thinking', 'Raisonnement', 'réflexion', 'Extended'];
+                    needsSave = true;
+                }
+                if (needsSave) {
+                    chrome.storage.sync.set({ config });
+                }
+            } else {
+                config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
                 chrome.storage.sync.set({ config });
             }
             // Set global debug flag
@@ -571,14 +598,57 @@ function findModelSelectorPill() {
     return null;
 }
 
+function getPickerModelOnlyText(pillElement) {
+    if (!pillElement) return '';
+    const primary = pillElement.querySelector('.picker-primary-text');
+    if (primary) return primary.textContent.trim();
+    return getPickerFullText(pillElement);
+}
+
+function isPillShowingExtended(pillElement, keywords = []) {
+    if (!pillElement) return false;
+    const list = (Array.isArray(keywords) && keywords.length > 0)
+        ? keywords
+        : ['raisonnement étendu', 'extended thinking', 'thinking', 'raisonnement', 'réflexion', 'extended'];
+
+    // 1. Check secondary text specifically against keywords (never assume any text = extended)
+    const secondary = pillElement.querySelector('.picker-secondary-text');
+    if (secondary) {
+        const secText = secondary.textContent.toLowerCase().trim();
+        if (list.some(kw => secText.includes(kw.toLowerCase().trim()))) {
+            return true;
+        }
+    }
+
+    // 2. Check badges or tags inside the pill specifically against keywords
+    const badgeEls = pillElement.querySelectorAll('.picker-badge, [class*="badge"], [class*="tag"], [class*="sub-label"]');
+    for (const badge of badgeEls) {
+        const badgeText = badge.textContent.toLowerCase().trim();
+        if (list.some(kw => badgeText.includes(kw.toLowerCase().trim()))) {
+            return true;
+        }
+    }
+
+    // 3. Fallback: check full pill text or aria-label against keywords,
+    // making sure not to falsely match the primary model name
+    const primary = pillElement.querySelector('.picker-primary-text');
+    const primaryText = primary ? primary.textContent.toLowerCase().trim() : '';
+    const fullText = (getPickerFullText(pillElement) + ' ' + (pillElement.getAttribute('aria-label') || '')).toLowerCase();
+
+    return list.some(kw => {
+        const kwLower = kw.toLowerCase().trim();
+        return fullText.includes(kwLower) && !primaryText.includes(kwLower);
+    });
+}
+
 function currentModelContains(keywords) {
     const pill = findModelSelectorPill();
     if (!pill) {
         logWarn('No pill element found');
         return null;
     }
-    const text = getPickerFullText(pill).toLowerCase();
-    log(STYLES.data, `Current model: "${text}"`);
+    const text = getPickerModelOnlyText(pill).toLowerCase();
+    log(STYLES.data, `Current model (primary): "${text}"`);
     for (const kw of keywords) {
         if (text.includes(kw.toLowerCase().trim())) {
             log(STYLES.match, `Match: "${kw}" → switching model`);
@@ -601,7 +671,81 @@ function getMenuItemLabel(menuItem) {
     return (menuItem.textContent || '').trim();
 }
 
-function findMenuItem(keywords) {
+function isExtendedMenuItem(item, keywords = []) {
+    if (!item) return false;
+    const label = getMenuItemLabel(item).toLowerCase();
+    const list = (Array.isArray(keywords) && keywords.length > 0)
+        ? keywords
+        : ['raisonnement étendu', 'extended thinking', 'thinking', 'raisonnement', 'réflexion', 'extended'];
+
+    // Direct match on item primary label
+    if (list.some(kw => label.includes(kw.toLowerCase().trim()))) {
+        return true;
+    }
+
+    // Only check full text if item is NOT an explicit base model option (which has data-mode-id)
+    const isModelItem = item.hasAttribute('data-mode-id') ||
+        (item.getAttribute('data-test-id') || '').includes('mode-option');
+    if (!isModelItem) {
+        const fullText = (item.textContent || '').toLowerCase();
+        if (list.some(kw => fullText.includes(kw.toLowerCase().trim()))) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function findExtendedMenuItem(menu, keywords = []) {
+    const root = menu || document;
+    const allItems = root.querySelectorAll(
+        'gem-menu-item, [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]'
+    );
+    for (const item of allItems) {
+        if (item.getClientRects().length === 0) continue;
+        if (isExtendedMenuItem(item, keywords)) {
+            return item;
+        }
+    }
+    return null;
+}
+
+function isExtendedItemActive(item) {
+    if (!item) return false;
+    if (item.getAttribute('data-active') === 'true') return true;
+    if (item.getAttribute('aria-checked') === 'true') return true;
+    if (item.getAttribute('aria-selected') === 'true') return true;
+    if (item.classList.contains('selected') || item.classList.contains('active')) return true;
+
+    const content = item.querySelector('gem-menu-item-content');
+    if (content && (content.classList.contains('selected') || content.classList.contains('active'))) {
+        return true;
+    }
+
+    const checkIcon = item.querySelector('[fonticon="check"], [data-mat-icon-name="check"], gem-icon[aria-label*="Sélectionné" i], gem-icon[aria-label*="Selected" i]');
+    if (checkIcon) return true;
+
+    return false;
+}
+
+function setExtendedThinkingMode(menu, desiredState, keywords = []) {
+    const item = findExtendedMenuItem(menu, keywords);
+    if (!item) {
+        logWarn('Extended thinking menu item not found');
+        return false;
+    }
+    const currentlyActive = isExtendedItemActive(item);
+    log(STYLES.info, `Extended thinking in menu: currently=${currentlyActive ? 'ON' : 'OFF'}, target=${desiredState ? 'ON' : 'OFF'}`);
+    if (currentlyActive !== desiredState) {
+        log(STYLES.match, `Toggling Extended Thinking to ${desiredState ? 'ON' : 'OFF'} ✓`);
+        item.click();
+        return true;
+    }
+    log(STYLES.info, `Extended thinking already in target state (${desiredState ? 'ON' : 'OFF'})`);
+    return false;
+}
+
+function findMenuItem(keywords, extendedKeywords = []) {
     const allGemItems = document.querySelectorAll('gem-menu-item');
     if (DEBUG && allGemItems.length > 0) {
         const labels = Array.from(allGemItems).map(item => getMenuItemLabel(item));
@@ -613,6 +757,7 @@ function findMenuItem(keywords) {
 
         for (const item of allGemItems) {
             if (item.getClientRects().length === 0) continue;
+            if (isExtendedMenuItem(item, extendedKeywords)) continue;
             const label = getMenuItemLabel(item).toLowerCase();
             if (matchesModelKeyword(label, kw)) {
                 log(STYLES.match, `Menu match: "${label}" for keyword "${kw}"`);
@@ -639,7 +784,10 @@ function findMenuItem(keywords) {
                 const btn = el.closest(
                     'gem-menu-item, button, [role="menuitemradio"], [role="menuitem"], [role="option"], mat-option, li'
                 );
-                if (btn && btn.getClientRects().length > 0) return { element: btn, keyword };
+                if (btn && btn.getClientRects().length > 0) {
+                    if (isExtendedMenuItem(btn, extendedKeywords)) continue;
+                    return { element: btn, keyword };
+                }
             }
         }
 
@@ -650,6 +798,7 @@ function findMenuItem(keywords) {
         );
         for (const item of menuItems) {
             if (item.getClientRects().length === 0) continue;
+            if (isExtendedMenuItem(item, extendedKeywords)) continue;
             const label = getMenuItemLabel(item).toLowerCase();
             if (matchesModelKeyword(label, kw)) return { element: item, keyword };
         }
@@ -837,13 +986,19 @@ async function runScript() {
     await new Promise(r => setTimeout(r, 300));
     if (isCancelled) return;
 
-    // 3. Check & switch model
+    // 3. Check & switch model + extended thinking
     if (pickerPill) {
-        logStep('Step 3', 'Checking current model...');
+        logStep('Step 3', 'Checking current model & extended thinking...');
+        const extKeywords = config.EXTENDED_KEYWORDS || [];
         const badModel = currentModelContains(config.MODELS_TO_AVOID);
+        const pillExtended = isPillShowingExtended(pickerPill, extKeywords);
+        const needExtendedToggle = (typeof config.EXTENDED_THINKING === 'boolean')
+            && (pillExtended !== config.EXTENDED_THINKING);
 
-        if (badModel) {
-            badModel.element.click();
+        log(STYLES.info, `Check: badModel=${badModel ? badModel.keyword : 'none'}, pillExtended=${pillExtended}, targetExtended=${config.EXTENDED_THINKING}`);
+
+        if (badModel || needExtendedToggle) {
+            pickerPill.click();
             log(STYLES.info, 'Waiting for menu...');
             const menu = await waitForMenu();
             if (isCancelled) {
@@ -859,16 +1014,39 @@ async function runScript() {
                 return;
             }
 
-            const targetModel = findMenuItem(config.TARGET_MODELS);
-            if (targetModel) {
-                targetModel.element.click();
-                await new Promise(r => setTimeout(r, config.DELAY_PAGE_LOAD));
-                if (isCancelled) return;
-                log(STYLES.match, `Switched to ${targetModel.keyword} ✓`);
-            } else {
-                showNotification('Aucun modèle cible trouvé dans le menu', 'warning');
-                closeOpenMenu();
+            // A. Switch model if bad
+            if (badModel) {
+                const targetModel = findMenuItem(config.TARGET_MODELS, extKeywords);
+                if (targetModel) {
+                    targetModel.element.click();
+                    log(STYLES.match, `Switched to ${targetModel.keyword} ✓`);
+                    await new Promise(r => setTimeout(r, config.DELAY_PAGE_LOAD));
+                    if (isCancelled) return;
+                } else {
+                    showNotification('Aucun modèle cible trouvé dans le menu', 'warning');
+                }
             }
+
+            // B. Toggle extended thinking if needed
+            if (typeof config.EXTENDED_THINKING === 'boolean') {
+                let currentMenu = document.querySelector('gem-menu[data-visible="true"], gem-menu, [role="menu"]');
+                if (!currentMenu) {
+                    const pillNow = findModelSelectorPill() || pickerPill;
+                    if (isPillShowingExtended(pillNow, extKeywords) !== config.EXTENDED_THINKING) {
+                        pillNow.click();
+                        currentMenu = await waitForMenu();
+                        await new Promise(r => setTimeout(r, 200));
+                    }
+                }
+                if (currentMenu && !isCancelled) {
+                    const toggled = setExtendedThinkingMode(currentMenu, config.EXTENDED_THINKING, extKeywords);
+                    if (toggled) {
+                        await new Promise(r => setTimeout(r, 300));
+                    }
+                }
+            }
+
+            closeOpenMenu();
         }
     }
 
